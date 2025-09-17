@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Redox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #1e293b; /* Dark slate text */
+        }
+        .mind-map-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        .mind-map-node {
+            padding: 1rem 1.5rem;
+            border-radius: 50px;
+            background-color: #ffffff;
+            color: #3b82f6; /* Blue-500 */
+            border: 2px solid #3b82f6;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        .mind-map-node:hover, .mind-map-node.active {
+            transform: scale(1.05);
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+        .mind-map-branch {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.9rem;
+            border-color: #60a5fa; /* Blue-400 */
+            color: #60a5fa;
+        }
+        .mind-map-branch:hover, .mind-map-branch.active {
+            background-color: #60a5fa;
+            color: #ffffff;
+        }
+        .content-section {
+            display: none;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            margin: 1rem auto;
+            max-width: 900px;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card-flip {
+            perspective: 1000px;
+        }
+        .card-inner {
+            position: relative;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+            border-radius: 1rem;
+        }
+        .card-flip:hover .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-front {
+            background-color: #eff6ff; /* Blue-50 */
+            color: #1e3a8a; /* Blue-900 */
+        }
+        .card-back {
+            background-color: #dbeafe; /* Blue-200 */
+            color: #1e3a8a;
+            transform: rotateY(180deg);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        .keyword {
+            font-weight: 700;
+            color: #2563eb; /* Blue-600 */
+        }
+        .italic-eq {
+            font-style: italic;
+            color: #1d4ed8; /* Blue-700 */
+            font-weight: 500;
+        }
+        .diagram-placeholder {
+            border: 2px dashed #9ca3af; /* Gray-400 */
+            border-radius: 0.5rem;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            color: #4b5563; /* Gray-600 */
+            background-color: #f9fafb; /* Gray-50 */
+        }
+        .quiz-option {
+            border: 2px solid #d1d5db; /* Gray-300 */
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quiz-option:hover {
+            background-color: #e5e7eb; /* Gray-200 */
+        }
+        .quiz-option.correct {
+            background-color: #d1fae5; /* Green-100 */
+            border-color: #10b981; /* Green-500 */
+        }
+        .quiz-option.incorrect {
+            background-color: #fee2e2; /* Red-100 */
+            border-color: #ef4444; /* Red-500 */
+        }
+        sup, sub {
+            line-height: 0;
+        }
+        .underline-wave {
+            text-decoration: underline;
+            text-decoration-style: wavy;
+            text-decoration-color: #ef4444; /* Red-500 */
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        @keyframes color-change {
+            0% { color: #3b82f6; }
+            20% { color: #22c55e; }
+            40% { color: #f97316; }
+            60% { color: #ef4444; }
+            80% { color: #8b5cf6; }
+            100% { color: #3b82f6; }
+        }
+
+        .special-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            animation: float 4s ease-in-out infinite, color-change 8s linear infinite;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="text-center mb-8">
+        <h1 class="text-4xl md:text-5xl font-bold text-slate-800">Redox</h1>
+        <p class="special-text mt-4">For Maxwell</p>
+    </header>
+
+    <!-- Mind Map Navigation -->
+    <div class="mind-map-container">
+        <div class="flex items-center space-x-4">
+            <div id="nav-ox-red" class="mind-map-node mind-map-branch">Oxidation & Reduction</div>
+            <div id="nav-main" class="mind-map-node active">Redox</div>
+            <div id="nav-elec-trans" class="mind-map-node mind-map-branch">Redox & Electron Transfer</div>
+        </div>
+    </div>
+
+    <!-- Content Sections -->
+    <main class="container mx-auto">
+        <!-- Main Redox Introduction (Visible by default) -->
+        <section id="content-main" class="content-section active text-center">
+            <h2 class="text-2xl font-bold mb-4">Welcome to Redox!</h2>
+            <p>Redox reactions are all about the transfer of electrons or changes in oxygen. It's a fundamental concept in chemistry.</p>
+            <p class="mt-2">Use the <b class="text-blue-600">mind map</b> above to navigate through the different topics. Click on a topic to get started!</p>
+        </section>
+
+        <!-- Oxidation & Reduction Section -->
+        <section id="content-ox-red" class="content-section">
+            <h2 class="text-3xl font-bold mb-6 text-blue-700">Oxidation & Reduction</h2>
+
+            <div class="p-4 bg-blue-50 rounded-lg mb-6">
+                 <h3 class="text-xl font-semibold mb-2">Roman numerals and oxidation numbers</h3>
+                <p><b class="keyword">Transition elements</b> can bond in different ways by forming ions with <b class="text-red-500">different charges</b>.</p>
+                <p>When naming, the charge on the ion is shown by using a <b class="keyword">Roman numeral</b> after the element's name.</p>
+                <p class="mt-2">For example, iron can form different ions:</p>
+                <ul class="list-disc list-inside mt-4 space-y-2">
+                    <li>Iron ions with a 2+ charge, <i class="italic-eq">Fe<sup>2+</sup></i>, are called <b class="keyword">iron(II)</b> ions.</li>
+                    <li>Iron ions with a 3+ charge, <i class="italic-eq">Fe<sup>3+</sup></i>, are called <b class="keyword">iron(III)</b> ions.</li>
+                </ul>
+                <p class="mt-3">The Roman numeral is the <b class="underline-wave">oxidation number</b> of the element.</p>
+            </div>
+            
+            <div class="p-4 bg-gray-50 rounded-lg mb-6">
+                <h3 class="text-xl font-semibold mb-2">Example: Iron Oxide</h3>
+                <p>For example, iron reacts with oxygen to form iron oxide. But the name and formula of the product depend on the oxidation state of the iron ions:</p>
+                <div class="grid md:grid-cols-2 gap-4 mt-4">
+                    <div class="p-4 border border-green-300 bg-green-50 rounded-md">
+                        <h4 class="font-bold text-green-800">Iron(II) ions</h4>
+                        <ul class="list-disc list-inside mt-2 text-green-700">
+                            <li>The iron oxide product contains iron(II) ions, <i class="italic-eq">Fe<sup>2+</sup></i>.</li>
+                            <li>The name of this product is <b class="keyword">iron(II) oxide</b>.</li>
+                            <li>The formula of this product is <b class="keyword">FeO</b>.</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 border border-purple-300 bg-purple-50 rounded-md">
+                        <h4 class="font-bold text-purple-800">Iron(III) ions</h4>
+                        <ul class="list-disc list-inside mt-2 text-purple-700">
+                            <li>The iron oxide product contains iron(III) ions, <i class="italic-eq">Fe<sup>3+</sup></i>.</li>
+                            <li>The name of this product is <b class="keyword">iron(III) oxide</b>.</li>
+                            <li>The formula of this product is <b class="keyword">Fe<sub>2</sub>O<sub>3</sub></b>.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-yellow-50 rounded-lg mb-6">
+                <h3 class="text-xl font-semibold mb-2">Worked Example</h3>
+                <p class="mb-2"><b>1.</b> State the oxidation number of the transition metal ion in silver(I) chloride, AgCl.</p>
+                <p><b>2.</b> Name, including Roman numeral, the compound with the formula <i class="italic-eq">CoCl<sub>2</sub></i>.</p>
+                <details class="mt-3 bg-white p-3 rounded-md cursor-pointer">
+                    <summary class="font-semibold">Show Answer</summary>
+                    <div class="mt-2 border-t pt-2">
+                        <p><b>Answer 1:</b> The oxidation number is <b class="keyword">+1</b> (from the Roman numeral I).</p>
+                        <p><b>Answer 2:</b> The compound name is <b class="keyword">cobalt(II) chloride</b>. Since each chloride ion has a 1- charge, the cobalt ion must have a 2+ charge to balance the two chloride ions.</p>
+                    </div>
+                </details>
+            </div>
+
+            <div class="p-4 bg-blue-50 rounded-lg mb-6">
+                <h3 class="text-xl font-semibold mb-2">Definitions in terms of Oxygen</h3>
+                <div class="grid md:grid-cols-2 gap-4 mt-4">
+                    <div class="card-flip">
+                        <div class="card-inner">
+                            <div class="card-front"><h4 class="text-2xl font-bold">Oxidation is...</h4></div>
+                            <div class="card-back"><p><b class="text-xl">Gain</b> of oxygen.</p></div>
+                        </div>
+                    </div>
+                    <div class="card-flip">
+                        <div class="card-inner">
+                            <div class="card-front"><h4 class="text-2xl font-bold">Reduction is...</h4></div>
+                            <div class="card-back"><p><b class="text-xl">Loss</b> of oxygen.</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="diagram-placeholder">
+                    <p><b>Space for Diagram:</b> Oxidation and Reduction in terms of Oxygen Transfer</p>
+                    <p class="text-sm">(e.g., Magnesium gaining oxygen, Copper(II) oxide losing oxygen)</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-pink-50 rounded-lg">
+                 <h3 class="text-xl font-semibold mb-2">Oxidising & Reducing Agents</h3>
+                 <p>An <b class="keyword">oxidising agent</b> is a substance which <b class="underline-wave">oxidises another substance</b> during a redox reaction. Oxidising agents are themselves <b class="keyword">reduced</b>.</p>
+                 <p class="mt-2">A <b class="keyword">reducing agent</b> is a substance which <b class="underline-wave">reduces another substance</b> during a redox reaction. Reducing agents are themselves <b class="keyword">oxidised</b>.</p>
+            </div>
+
+            <!-- Quiz for Oxidation & Reduction -->
+            <div class="mt-8 pt-6 border-t">
+                <h3 class="text-2xl font-bold mb-4">Quick Quiz!</h3>
+                <div class="space-y-4" id="quiz1">
+                     <div class="quiz-question">
+                        <p><b>1.</b> What is the oxidation number of copper in copper(II) sulfate?</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">+1</div>
+                            <div class="quiz-option">+2</div>
+                            <div class="quiz-option">+3</div>
+                        </div>
+                    </div>
+                     <div class="quiz-question">
+                        <p><b>2.</b> What is the correct formula for iron(III) oxide?</p>
+                        <div class="quiz-options mt-2" data-correct="2">
+                            <div class="quiz-option">FeO</div>
+                            <div class="quiz-option">Fe<sub>3</sub>O<sub>2</sub></div>
+                            <div class="quiz-option">Fe<sub>2</sub>O<sub>3</sub></div>
+                        </div>
+                    </div>
+                     <div class="quiz-question">
+                        <p><b>3.</b> Oxidation, in terms of oxygen, is defined as the...</p>
+                        <div class="quiz-options mt-2" data-correct="0">
+                            <div class="quiz-option">Gain of oxygen</div>
+                            <div class="quiz-option">Loss of oxygen</div>
+                            <div class="quiz-option">Loss of electrons</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>4.</b> What is the name of the compound with the formula CoCl₂?</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">Cobalt(I) chloride</div>
+                            <div class="quiz-option">Cobalt(II) chloride</div>
+                            <div class="quiz-option">Cobalt chloride</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>5.</b> A substance that causes another substance to be reduced is called...</p>
+                        <div class="quiz-options mt-2" data-correct="2">
+                            <div class="quiz-option">An oxidising agent</div>
+                            <div class="quiz-option">A catalyst</div>
+                            <div class="quiz-option">A reducing agent</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>6.</b> What happens to an oxidising agent during a redox reaction?</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">It is oxidised</div>
+                            <div class="quiz-option">It is reduced</div>
+                            <div class="quiz-option">It remains unchanged</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>7.</b> Reduction, in terms of oxygen, is the...</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">Gain of oxygen</div>
+                            <div class="quiz-option">Loss of oxygen</div>
+                            <div class="quiz-option">Gain of electrons</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>8.</b> What is the charge on an iron(III) ion?</p>
+                        <div class="quiz-options mt-2" data-correct="2">
+                            <div class="quiz-option">2+</div>
+                            <div class="quiz-option">2-</div>
+                            <div class="quiz-option">3+</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>9.</b> The Roman numeral in a compound's name like iron(II) oxide indicates the...</p>
+                        <div class="quiz-options mt-2" data-correct="0">
+                            <div class="quiz-option">Oxidation number of the metal</div>
+                            <div class="quiz-option">Number of oxygen atoms</div>
+                            <div class="quiz-option">Total charge of the compound</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>10.</b> Which of these equations represents an oxidation process?</p>
+                        <div class="quiz-options mt-2" data-correct="0">
+                            <div class="quiz-option">2Mg + O₂ → 2MgO</div>
+                            <div class="quiz-option">CuO + H₂ → Cu + H₂O</div>
+                            <div class="quiz-option">HCl + NaOH → NaCl + H₂O</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Redox & Electron Transfer Section -->
+        <section id="content-elec-trans" class="content-section">
+            <h2 class="text-3xl font-bold mb-6 text-green-700">Redox & Electron Transfer</h2>
+            
+            <div class="p-4 bg-green-50 rounded-lg mb-6 text-center">
+                 <h3 class="text-xl font-semibold mb-2">OILRIG</h3>
+                 <p>A helpful mnemonic to remember the definitions for oxidation and reduction in terms of electrons is <b class="keyword text-3xl tracking-widest">OILRIG</b>.</p>
+                 <div class="grid md:grid-cols-2 gap-4 mt-4">
+                    <div class="p-6 bg-white rounded-lg shadow-md">
+                        <p class="text-2xl font-bold text-green-800">OXIDATION</p>
+                        <p class="text-2xl font-bold text-green-800">IS</p>
+                        <p class="text-2xl font-bold text-green-800">LOSS</p>
+                        <p class="mt-2 text-slate-600">(of electrons)</p>
+                    </div>
+                    <div class="p-6 bg-white rounded-lg shadow-md">
+                        <p class="text-2xl font-bold text-green-800">REDUCTION</p>
+                        <p class="text-2xl font-bold text-green-800">IS</p>
+                        <p class="text-2xl font-bold text-green-800">GAIN</p>
+                        <p class="mt-2 text-slate-600">(of electrons)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-50 rounded-lg mb-6">
+                <h3 class="text-xl font-semibold mb-2">Half-Equations</h3>
+                <p>These show what happens to <b class="keyword">one</b> of the reactants during a reaction. Electrons are shown in half-equations as <b class="keyword">e<sup>-</sup></b>.</p>
+                <div class="grid md:grid-cols-2 gap-4 mt-4">
+                    <div class="p-4 border border-blue-300 bg-blue-50 rounded-md">
+                        <h4 class="font-bold text-blue-800">Oxidation (Loss of e<sup>-</sup>)</h4>
+                        <p class="mt-2">Electrons appear on the <b class="keyword">right-hand side</b> of the equation.</p>
+                        <p class="italic-eq mt-2">Fe → Fe<sup>3+</sup> + 3e<sup>-</sup></p>
+                    </div>
+                    <div class="p-4 border border-red-300 bg-red-50 rounded-md">
+                        <h4 class="font-bold text-red-800">Reduction (Gain of e<sup>-</sup>)</h4>
+                        <p class="mt-2">Electrons appear on the <b class="keyword">left-hand side</b> of the equation.</p>
+                        <p class="italic-eq mt-2">O + 2e<sup>-</sup> → O<sup>2-</sup></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-indigo-50 rounded-lg mb-6">
+                <h3 class="text-xl font-semibold mb-2">Redox in a Displacement Reaction</h3>
+                <p>Consider the reaction between iron and copper sulfate:</p>
+                <p class="italic-eq text-center text-lg my-3">iron + copper sulfate → iron(II) sulfate + copper</p>
+                <p class="italic-eq text-center text-lg my-3">Fe + CuSO<sub>4</sub> → FeSO<sub>4</sub> + Cu</p>
+
+                <p class="mt-4">We can write this as an <b class="keyword">ionic equation</b>:</p>
+                 <p class="italic-eq text-center text-lg my-3">Fe + Cu<sup>2+</sup> + SO<sub>4</sub><sup>2-</sup> → Fe<sup>2+</sup> + SO<sub>4</sub><sup>2-</sup> + Cu</p>
+
+                <p class="mt-4">We can then remove the <b class="underline-wave">spectator ions</b> (SO<sub>4</sub><sup>2-</sup>) to see the overall change. Spectator ions are ions that are present in the reaction but do not take part in it.</p>
+                <p class="italic-eq text-center text-lg my-3 bg-white p-2 rounded">Fe + Cu<sup>2+</sup> → Fe<sup>2+</sup> + Cu</p>
+                
+                <ul class="list-disc list-inside mt-4 space-y-2">
+                    <li>The iron atom has <b class="keyword">lost electrons</b> to become a positive ion, so has been <b class="keyword">oxidised</b>.</li>
+                    <li>The positive copper ion has <b class="keyword">gained electrons</b> to become an atom, so has been <b class="keyword">reduced</b>.</li>
+                </ul>
+
+                <div class="diagram-placeholder">
+                    <p><b>Space for Diagram:</b> The redox reaction between Fe and Cu<sup>2+</sup></p>
+                    <p class="text-sm">(Showing arrows for Oxidation and Reduction electron transfer)</p>
+                </div>
+                 <p class="text-center font-semibold">The Fe atom is oxidised (loses electrons) and the Cu<sup>2+</sup> ion is reduced (gains electrons).</p>
+            </div>
+            
+             <div class="p-4 bg-yellow-50 rounded-lg mb-6">
+                <h3 class="text-xl font-semibold mb-2">Worked Example</h3>
+                <p class="mb-2">Which change in the following equation is oxidation?</p>
+                <p class="italic-eq text-center text-lg my-3">V<sup>3+</sup> + Fe<sup>3+</sup> → V<sup>4+</sup> + Fe<sup>2+</sup></p>
+                <details class="mt-3 bg-white p-3 rounded-md cursor-pointer">
+                    <summary class="font-semibold">Show Answer</summary>
+                    <div class="mt-2 border-t pt-2">
+                       <p><b>Step 1 - Identify the changes for each species:</b></p>
+                        <ul class="list-disc list-inside ml-4">
+                            <li>V<sup>3+</sup> to V<sup>4+</sup> → V<sup>3+</sup> has <b>lost 1 electron</b></li>
+                            <li>Fe<sup>3+</sup> to Fe<sup>2+</sup> → Fe<sup>3+</sup> has <b>gained 1 electron</b></li>
+                        </ul>
+                        <p class="mt-2"><b>Step 2 - Identify each change as either oxidation and reduction:</b></p>
+                        <ul class="list-disc list-inside ml-4">
+                             <li>V<sup>3+</sup> to V<sup>4+</sup> is <b class="keyword">oxidation</b></li>
+                             <li>Fe<sup>3+</sup> to Fe<sup>2+</sup> is <b class="keyword">reduction</b></li>
+                        </ul>
+                         <p class="mt-2 font-bold">Therefore, the oxidation is the change from V<sup>3+</sup> to V<sup>4+</sup>.</p>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Quiz for Electron Transfer -->
+            <div class="mt-8 pt-6 border-t">
+                <h3 class="text-2xl font-bold mb-4">Quick Quiz!</h3>
+                <div class="space-y-4" id="quiz2">
+                    <div class="quiz-question">
+                        <p><b>1.</b> According to OILRIG, reduction is the...</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">Loss of electrons</div>
+                            <div class="quiz-option">Gain of electrons</div>
+                            <div class="quiz-option">Gain of oxygen</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>2.</b> In the half-equation <i class="italic-eq">Mg → Mg<sup>2+</sup> + 2e<sup>-</sup></i>, what is happening to the Magnesium?</p>
+                        <div class="quiz-options mt-2" data-correct="0">
+                            <div class="quiz-option">Oxidation</div>
+                            <div class="quiz-option">Reduction</div>
+                            <div class="quiz-option">Neutralization</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>3.</b> In the reaction <i class="italic-eq">Zn + Cu<sup>2+</sup> → Zn<sup>2+</sup> + Cu</i>, which substance is reduced?</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">Zn</div>
+                            <div class="quiz-option">Cu<sup>2+</sup></div>
+                            <div class="quiz-option">Zn<sup>2+</sup></div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>4.</b> What is a spectator ion?</p>
+                        <div class="quiz-options mt-2" data-correct="2">
+                            <div class="quiz-option">An ion that gains electrons</div>
+                            <div class="quiz-option">An ion that is part of the solid product</div>
+                            <div class="quiz-option">An ion that does not participate in the reaction</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>5.</b> In a half-equation for reduction, on which side do the electrons (e⁻) appear?</p>
+                        <div class="quiz-options mt-2" data-correct="0">
+                            <div class="quiz-option">Left-hand side</div>
+                            <div class="quiz-option">Right-hand side</div>
+                            <div class="quiz-option">They do not appear</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>6.</b> In the reaction <i class="italic-eq">Fe + Cu<sup>2+</sup> → Fe<sup>2+</sup> + Cu</i>, which species is the reducing agent?</p>
+                        <div class="quiz-options mt-2" data-correct="0">
+                            <div class="quiz-option">Fe</div>
+                            <div class="quiz-option">Cu<sup>2+</sup></div>
+                            <div class="quiz-option">Fe<sup>2+</sup></div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>7.</b> The change from V<sup>3+</sup> to V<sup>4+</sup> is an example of...</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">Reduction, as it gains a positive charge</div>
+                            <div class="quiz-option">Oxidation, as it loses an electron</div>
+                            <div class="quiz-option">Reduction, as it loses an electron</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>8.</b> How many electrons are lost when an Fe atom becomes an Fe³⁺ ion?</p>
+                        <div class="quiz-options mt-2" data-correct="2">
+                            <div class="quiz-option">1</div>
+                            <div class="quiz-option">2</div>
+                            <div class="quiz-option">3</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>9.</b> A half-equation is useful because it shows...</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">Only the spectator ions</div>
+                            <div class="quiz-option">The change for a single reactant</div>
+                            <div class="quiz-option">The final products only</div>
+                        </div>
+                    </div>
+                    <div class="quiz-question">
+                        <p><b>10.</b> In the process <i class="italic-eq">Fe<sup>3+</sup> + e<sup>-</sup> → Fe<sup>2+</sup></i>, what is occurring?</p>
+                        <div class="quiz-options mt-2" data-correct="1">
+                            <div class="quiz-option">Oxidation</div>
+                            <div class="quiz-option">Reduction</div>
+                            <div class="quiz-option">Displacement</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navMain = document.getElementById('nav-main');
+            const navOxRed = document.getElementById('nav-ox-red');
+            const navElecTrans = document.getElementById('nav-elec-trans');
+
+            const contentMain = document.getElementById('content-main');
+            const contentOxRed = document.getElementById('content-ox-red');
+            const contentElecTrans = document.getElementById('content-elec-trans');
+
+            const allNavs = [navMain, navOxRed, navElecTrans];
+            const allContents = [contentMain, contentOxRed, contentElecTrans];
+
+            function showContent(nav, content) {
+                allNavs.forEach(n => n.classList.remove('active'));
+                allContents.forEach(c => c.classList.remove('active'));
+                nav.classList.add('active');
+                content.classList.add('active');
+                 window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            navMain.addEventListener('click', () => showContent(navMain, contentMain));
+            navOxRed.addEventListener('click', () => showContent(navOxRed, contentOxRed));
+            navElecTrans.addEventListener('click', () => showContent(navElecTrans, contentElecTrans));
+            
+            // Quiz functionality
+            const quizzes = document.querySelectorAll('#quiz1, #quiz2');
+            quizzes.forEach(quiz => {
+                const quizQuestions = quiz.querySelectorAll('.quiz-question');
+                quizQuestions.forEach(question => {
+                    const options = question.querySelectorAll('.quiz-option');
+                    options.forEach(option => {
+                        option.addEventListener('click', () => {
+                            const parentOptions = option.parentElement;
+                            const correctIndex = parseInt(parentOptions.getAttribute('data-correct'));
+                            const clickedIndex = Array.from(parentOptions.children).indexOf(option);
+
+                            // Disable further clicks on this question
+                            Array.from(parentOptions.children).forEach(child => {
+                                child.style.pointerEvents = 'none';
+                            });
+
+                            if (clickedIndex === correctIndex) {
+                                option.classList.add('correct');
+                            } else {
+                                option.classList.add('incorrect');
+                                parentOptions.children[correctIndex].classList.add('correct');
+                            }
+                        });
+                    });
+                });
+            });
+
+        });
+    </script>
+</body>
+</html>
+
